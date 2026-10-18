@@ -25,6 +25,7 @@ library(sdm)
 library(parallel)
 library(usdm) 
 library(rmaxent)
+library(maxnet)
 library(ENMeval)
 library(rJava)
 library(kuenm)
@@ -126,12 +127,12 @@ head(occ_data)
 
 # Run SDM
 models_ <- ENMeval::ENMevaluate(
-    occs = occ_data[,1:2], 
-    bg = bg_data[,1:2],
-    envs = env_,
+    occs = occ_data, 
+    bg = bg_data,
+    #envs = env_,
     algorithm =  "maxent.jar", 
     partitions = "block", 
-    raster.preds = TRUE,
+    raster.preds = FALSE,
     #parallel = do_parallel, 
     #numCores = n_cores,
     updateProgress = T, 
@@ -149,7 +150,7 @@ res <- eval.results(models_)
 opt_aicc <- res %>% dplyr::filter(delta.AICc == 0) %>% 
         dplyr::slice(which.max(auc.val.avg))
 
-# Seleciona parametro
+# Seleciona parámetro
 all_pred_ <- models_@models[["fc.H_rm.3"]] 
 
 # Contribuição das variáveis
@@ -171,6 +172,11 @@ thr_all_pred_contrib <- all_pred_@results %>%
     filter(
         str_detect(betas, "maximum_training_sensitivity_plus_specificity_cloglog_threshold")
 )
+
+source("simposio_db/model_pred_.r")
+
+pred_inv <- my_pred(all_pred_, env_)
+plot(pred_inv > .5, col = terrain.colors(100))
 
 pred.seq <- ENMeval::eval.predictions(res)
 plot(pred.seq, col = terrain.colors(100))
